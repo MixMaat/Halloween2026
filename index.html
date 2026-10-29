@@ -55,6 +55,15 @@ svg.room{width:100%;height:auto;display:block;border-radius:14px;border:1px soli
 @keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
 #calm{position:fixed;inset:0;z-index:70;background:#000d;display:none;align-items:center;justify-content:center;padding:20px}#calm.on{display:flex}
 #calm div{background:#1a0a10;border:1px solid var(--red);border-radius:16px;padding:20px;max-width:420px;text-align:center}
+.note{border:1px dashed var(--org);border-radius:12px;padding:10px 12px;margin:14px 0;font-family:system-ui,sans-serif;font-size:.95rem;background:#1f0d0a}
+input.nm{width:100%;margin-top:10px;padding:13px 14px;font:inherit;font-family:system-ui,sans-serif;font-size:1.05rem;color:var(--ink);background:#1a0a10;border:1px solid #4a1a24;border-radius:12px}
+.lamp{position:relative;height:min(60vh,420px);border-radius:14px;overflow:hidden;border:1px solid #4a1a24;background:linear-gradient(#1b1020,#0a060d);touch-action:none;user-select:none;-webkit-user-select:none;margin-bottom:10px}
+.lamp svg,.lamp canvas{position:absolute;inset:0;width:100%;height:100%}.lamp canvas{touch-action:none}
+.lamp .it{position:absolute;font-size:2.6rem;transform:translate(-50%,-50%);transition:transform .3s,filter .3s}.lamp .it.f{filter:drop-shadow(0 0 12px #ff8a2b);transform:translate(-50%,-50%) scale(1.5)}
+.dip{background:linear-gradient(#2a1a0a,#140a05);border:4px double #d4a43a;border-radius:14px;padding:18px;text-align:center;color:#f4e3b0}
+.dip h1{font-size:2.2rem;margin:.1em 0}.dn{font-family:var(--head);font-size:2.4rem;color:#ffd76a;margin:.2em 0;word-break:break-word;line-height:1.1}
+.sign{font-family:var(--head);font-size:1.7rem;color:#ffd76a;margin:.3em 0 0}.dh{font-size:3.2rem}.stars{font-size:1.7rem;margin:.3em 0}
+#gh{text-align:center;font-size:7rem;line-height:1.2;cursor:pointer;user-select:none;transition:font-size .2s,opacity .2s}
 @media (prefers-reduced-motion:reduce){#scare.on,#fxshake.sh,h1{animation:none}.fx{display:none}}
 </style>
 </head>
@@ -154,10 +163,19 @@ function rain(em){for(let i=0;i<26;i++){const s=document.createElement("span");s
   s.style.setProperty("--t",(2.5+Math.random()*3)+"s");s.style.animationDelay=Math.random()*1.5+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),7500)}}
 
 /* ---------- Schermen ---------- */
-const stage=$("stage");let step=0;
+const WIN={a:new Date(2026,9,31,19,0),b:new Date(2026,9,31,21,30)};
+const NOTE='<div class="note">🍬 <b>Let op:</b> het snoep ligt er alleen op <b>zaterdag 31 oktober tussen 19:00 en 21:30 uur</b>. Te vroeg? Kom later terug. Te laat? Misschien heb je volgend jaar weer een kans… 👻</div>';
+function candyState(){if(/snoep/.test(location.hash))return"open";const n=new Date();return n<WIN.a?"early":n>WIN.b?"late":"open"}
+function candyMsg(){const s=candyState();
+  if(s==="open")return'<span style="color:var(--ink)">Het snoep ligt <b>achter een bloempot</b> bij het huis. Kijk goed rond bij de voordeur van Betuwe Singel 18. 🌸🍬</span>';
+  if(s==="early"){const ms=WIN.a-new Date();const w=ms>=864e5?"nog ongeveer "+Math.ceil(ms/864e5)+" dagen":ms>=36e5?"nog ongeveer "+Math.floor(ms/36e5)+" uur":"nog maar "+Math.max(1,Math.ceil(ms/6e4))+" minuten";
+    return'<span style="color:var(--ink)">⏳ <b>Nog even geduld!</b> Het snoep wordt pas klaargelegd op zaterdag 31 oktober om 19:00 uur ('+w+'). Kom later terug, dan vertellen we je waar je moet zoeken.</span>'}
+  return'<span style="color:var(--ink)">😢 <b>Helaas, te laat!</b> Het snoep lag er alleen op zaterdag 31 oktober tot 21:30 uur. Misschien heb je volgend jaar weer een kans… 👻</span>'}
+const stage=$("stage");let step=0,NAME="",WRONG=0;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const A={};
 function screen(html){stage.innerHTML='<div class="sc">'+html+'</div>';window.scrollTo(0,0)}
-function progress(){$("pg").hidden=step<1;$("pg").firstChild.style.width=Math.min(100,step/10*100)+"%";$("ca").hidden=step<1}
+function progress(){$("pg").hidden=step<1;$("pg").firstChild.style.width=Math.min(100,step/11*100)+"%";$("ca").hidden=step<1}
 function next(){step++;progress();STEPS[step]()}
 const photo=src=>'<div class="ph" data-a="zoom"><img src="'+(src||IMG.house)+'" alt="Het spookhuis aan de Betuwe Singel 18"><span class="tip">🔍 tik om te vergroten</span></div>';
 const btn=(t,a,cls)=>'<button class="b '+(cls||"")+'" data-a="'+a+'">'+t+'</button>';
@@ -169,20 +187,20 @@ function quiz(q){
     const i=+el.dataset.i;
     if(i===q.ok){el.classList.add("ok");$("fb").textContent=q.good;sfx("heart");
       document.querySelectorAll("#opts .b").forEach(b=>b.disabled=true);setTimeout(q.then||next,1400)}
-    else{el.classList.add("bad");el.disabled=true;wrong++;$("fb").textContent="Fout! "+q.bad;shake();flash();
+    else{el.classList.add("bad");el.disabled=true;wrong++;WRONG++;$("fb").textContent="Fout! "+q.bad;shake();flash();
       scare(wrong%2?{text:"FOUT!",snd:[["growl"]],dur:900}:{img:IMG.pump,text:"GRRR!",snd:[["growl"],["stab",0,300]],dur:1300})}
   };
 }
 const STEPS=[
 /* 0 start */()=>{
-  screen('<h1>Het Spookhuis van Betuwe Singel 18</h1>'+photo()+'<p class="big">Staat je geluid maximaal? Zo niet, zet het dan op maximaal voor de beste beleving!</p>'+btn("🔊 Ja, ik ben er klaar voor!","start","go")+'<p class="mut">Let op: deze app bevat schrikeffecten en harde geluiden. Alleen voor moedige spokenjagers!</p>');
-  A.start=()=>{au();setMusic(true);sfx("whisper");next()};
+  screen('<h1>Het Spookhuis van Betuwe Singel 18</h1>'+photo()+'<p class="big">Staat je geluid maximaal? Zo niet, zet het dan op maximaal voor de beste beleving!</p><input class="nm" id="nm" maxlength="20" placeholder="Hoe heet jij? (mag leeg blijven)" autocomplete="off">'+btn("🔊 Ja, ik ben er klaar voor!","start","go")+NOTE+'<p class="mut">Let op: deze app bevat schrikeffecten en harde geluiden. Alleen voor moedige spokenjagers!</p>');
+  A.start=()=>{NAME=($("nm").value||"").trim().slice(0,20);au();setMusic(true);sfx("whisper");next()};
 },
 /* 1 intro */()=>{
-  screen('<h1>Welkom, bezoeker…</h1>'+photo()+
+  screen('<h1>Welkom, '+(NAME?esc(NAME):'bezoeker')+'…</h1>'+photo()+
   '<p>Wij zijn <b>Harold en Marlies</b> en wonen op <b>Betuwe Singel 18</b>. Dit jaar hadden we ons huis zo graag versierd voor Halloween, maar het is er helaas niet van gekomen.</p>'+
   '<p>De spoken van het Lingemeer hoorden daarvan en vonden: <i>“Dat los ik wel op.”</i> Sindsdien is het huis nooit meer hetzelfde geweest. Nu is er een spookhuis dat alleen op je scherm bestaat.</p>'+
-  '<p>Durf jij erin? Beantwoord de vragen en overleef de spoken. Dan wacht er snoep op je. 🍬</p>'+btn("🚪 Loop naar de voordeur","n","go"));
+  '<p>Durf jij erin? Beantwoord de vragen en overleef de spoken. Dan wacht er snoep op je. 🍬</p>'+NOTE+btn("🚪 Loop naar de voordeur","n","go"));
   A.n=next;
 },
 /* 2 voordeur */()=>{
@@ -193,7 +211,6 @@ const STEPS=[
     setTimeout(()=>{screen(photo()+'<h2>De deur gaat vanzelf open…</h2><p>Niemand staat erachter. Een koude luchtstroom ruikt naar pompoen en oude kast.</p>'+btn("😬 Stap naar binnen","n","go"));A.n=next},4800)};
 },
 /* 3 grafsteen */()=>quiz({photo:1,h:"In de voortuin",t:"Voordat je binnenkomt, kijk goed naar de foto. Er staan grafstenen in de voortuin. Wat staat er op?",o:["Welkom thuis","Van der Geest, Rust in Vrede, of Niet","Hier rust Harold"],ok:1,good:"Klopt! De Geesten rusten er niet erg rustig.",bad:"Kijk nog eens goed naar de grafstenen op de foto."}),
-/* 4 zonnewijzer */()=>quiz({photo:1,h:"De zonnewijzer",t:"Rechtsonder staat een mossige zonnewijzer. Er staat een tekst op die begint met ‘Tijd voor de…’ Hoe eindigt de zin?",o:["…koffie","…snoep","…dood"],ok:2,good:"Brr! Maar je hebt goed gelezen.",bad:"Zoom in op de foto, de tekst staat rechtsonder."}),
 /* 5 gang */()=>{
   const fr=[60,160,260].map((x,i)=>'<g class="pt" data-a="eye" data-i="'+i+'"><rect x="'+x+'" y="40" width="80" height="110" fill="#2b1810" stroke="#7a5a2a" stroke-width="5"/><ellipse cx="'+(x+40)+'" cy="95" rx="26" ry="38" fill="#1a1a22"/><path d="M'+(x+22)+' 85 h12 M'+(x+46)+' 85 h12" stroke="#888" stroke-width="3"/><g class="eye"><circle cx="'+(x+28)+'" cy="85" r="8" fill="#fff"/><circle cx="'+(x+52)+'" cy="85" r="8" fill="#fff"/><circle cx="'+(x+28)+'" cy="85" r="4" fill="#d00"/><circle cx="'+(x+52)+'" cy="85" r="4" fill="#d00"/></g></g>').join("");
   screen('<h2>De gang</h2><p>Drie oude schilderijen hangen aan de muur. Hun ogen zijn dicht. Tik ze één voor één aan om ze te wekken. Maar durf je dat wel?</p><svg class="room" viewBox="0 0 400 200"><rect width="400" height="200" fill="#120a0e"/><polygon points="0,150 400,150 340,200 60,200" fill="#241014"/>'+fr+'<circle cx="30" cy="30" r="3" fill="#ff8a2b"/></svg><p class="fb" id="fb">Tik op de schilderijen.</p>');
@@ -204,19 +221,42 @@ const STEPS=[
 /* 7 woonkamer */()=>{
   screen('<h2>De woonkamer</h2><p>Het is pikdonker. Je voelt langs de muur naar een lichtknop…</p><svg class="room" id="rm" viewBox="0 0 400 200"><rect width="400" height="200" fill="#0b070a"/><rect x="40" y="110" width="150" height="50" rx="10" fill="#2a1418"/><rect x="40" y="90" width="150" height="30" rx="10" fill="#331a1f"/><rect x="260" y="60" width="80" height="100" fill="#1b1b2a"/><circle cx="360" cy="120" r="10" fill="#ff8a2b" opacity=".5"/><rect x="0" y="160" width="400" height="40" fill="#160b0f"/></svg>'+btn("💡 Doe het licht aan","light","go"));
   A.light=()=>{stage.querySelector(".b").disabled=true;$("rm").classList.add("dark");sfx("buzz");
-    setTimeout(()=>scare({text:"ACHTER JE!",gl:1,img:IMG.win,inv:1,snd:[["stab"],["boom",0,150]],dur:1700,done:()=>{screen('<h2>Het licht is weer aan</h2><p>Er staat niemand achter je. Dacht je…</p>'+btn("😮‍💨 Even ademhalen en doorgaan","n","go"));A.n=next}}),1700)};
+    setTimeout(()=>scare({text:"ACHTER JE!",gl:1,img:IMG.win,inv:1,snd:[["stab"],["boom",0,150]],dur:1700,done:()=>{screen('<h2>Het licht is weer aan</h2><p>Er staat niemand achter je. Dacht je…</p>'+(NAME?'<p><i>Een zacht stemmetje fluistert: ‘Ik zie je, '+esc(NAME)+'…’</i></p>':'')+btn("😮‍💨 Even ademhalen en doorgaan","n","go"));A.n=next}}),1700)};
+},
+/* 8 logeerkamer (zaklamp) */()=>{
+  screen('<h2>De logeerkamer</h2><p>'+(NAME?esc(NAME)+', het':'Het')+' is hier pikdonker. Sleep met je vinger over het scherm om je zaklamp te bewegen. Vind de <b>3 verstopte spoken</b>.</p><div class="lamp" id="lp"><svg viewBox="0 0 400 300" preserveAspectRatio="none"><rect x="20" y="40" width="90" height="230" fill="#1d1410"/><rect x="150" y="200" width="230" height="80" rx="8" fill="#2a1a1f"/><rect x="150" y="170" width="70" height="40" rx="8" fill="#3a2530"/><rect x="290" y="30" width="80" height="90" fill="#101a2a"/><circle cx="335" cy="70" r="20" fill="#f3ecd0" opacity=".5"/></svg><canvas id="cv"></canvas></div><p class="fb" id="fb">Gevonden: 0 van 3</p>');
+  const lp=$("lp"),cv=$("cv"),c=cv.getContext&&cv.getContext("2d");let W=lp.clientWidth,H=lp.clientHeight;cv.width=W;cv.height=H;
+  const em=["👻","🕷️","🦇"],its=em.map((e,i)=>({e,x:.15+i*.3+Math.random()*.15,y:.25+Math.random()*.5,f:0,el:null}));
+  its.sort(()=>Math.random()-.5).forEach(o=>{const s=document.createElement("span");s.className="it";s.textContent=o.e;s.style.left=o.x*100+"%";s.style.top=o.y*100+"%";lp.insertBefore(s,cv);o.el=s});
+  let px=W/2,py=H/2,n=0;
+  const draw=()=>{if(!c)return;c.globalCompositeOperation="source-over";c.clearRect(0,0,W,H);c.fillStyle="rgba(0,0,0,.97)";c.fillRect(0,0,W,H);c.globalCompositeOperation="destination-out";
+    const g=c.createRadialGradient(px,py,8,px,py,85);g.addColorStop(0,"rgba(0,0,0,1)");g.addColorStop(.7,"rgba(0,0,0,.85)");g.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=g;c.beginPath();c.arc(px,py,85,0,7);c.fill()};
+  draw();
+  const mv=e=>{const r=cv.getBoundingClientRect();px=(e.clientX||0)-r.left;py=(e.clientY||0)-r.top;draw();
+    its.forEach(o=>{if(o.f)return;if(Math.hypot(o.x*W-px,o.y*H-py)<55){o.f=1;o.el.classList.add("f");n++;sfx("whisper");$("fb").textContent="Gevonden: "+n+" van 3";
+      if(n===3){cv.removeEventListener("pointermove",mv);cv.removeEventListener("pointerdown",mv);setTimeout(()=>{shake();flash();scare({big:"👻",text:"GEVONDEN!",snd:[["stab"],["boom",0,100]],dur:1500,done:next})},500)}}})};
+  cv.addEventListener("pointermove",mv);cv.addEventListener("pointerdown",mv);
 },
 /* 9 zolder */()=>{
   screen('<h2>De zolder</h2><p>Op de zolder hangt een grote spin aan een draad. Ze bewaakt de trap naar beneden. Tik op de spin om haar te verjagen.</p><svg class="room" viewBox="0 0 400 200"><rect width="400" height="200" fill="#100c14"/><path d="M0 0 L120 70 M0 0 L70 120 M400 0 L280 70 M400 0 L330 120" stroke="#777" stroke-width="1" fill="none"/><line x1="200" y1="0" x2="200" y2="80" stroke="#aaa"/><g class="pt open" data-a="spider"><text x="200" y="110" font-size="56" text-anchor="middle">🕷️</text></g></svg>');
   A.spider=()=>{sfx("whisper");scare({big:"🕷️",text:"AAAH!",snd:[["scream"],["stab",0,100]],dur:1800,done:()=>{screen('<h2>Ze is weg!</h2><p>De spin is naar het plafond gevlucht. Je hart bonst wel ontzettend hard.</p>'+btn("🪜 Naar de kelder","n","go"));A.n=next;sfx("heart")}})};
 },
+/* 10 spook wegjagen */()=>{
+  screen('<h2>Het spook zit op je scherm!</h2><p>'+(NAME?esc(NAME)+', het':'Het')+' spook van de spin is op je telefoon gesprongen. Tik snel op het spook om het weg te jagen!</p><div id="gh" data-a="tapgh">👻</div><p class="fb" id="fb"></p>');
+  let n=0;const need=8;
+  A.tapgh=()=>{if(n>=need)return;n++;sfx("knock",1);shake();const g=$("gh");g.style.fontSize=Math.max(1.5,7-n*.65)+"rem";g.style.opacity=1-n*.08;$("fb").textContent="Nog "+(need-n)+" keer…";
+    if(n>=need){g.style.opacity=1;g.style.fontSize="5rem";g.textContent="✨";$("fb").textContent="Weg is het spook!";sfx("win");setTimeout(next,1300)}};
+},
 /* 11 wie woont hier */()=>quiz({h:"De laatste vraag",t:"Je ziet de trap naar buiten. Eén vraag nog. Wie wonen er echt op Betuwe Singel 18?",o:["Dracula en Frankenstein","Harold en Marlies","De heks van het Lingemeer"],ok:1,good:"Ja! Harold en Marlies, zij hebben het snoep voor je klaargelegd.",bad:"Lees het verhaal van het begin nog eens."}),
-/* 12 einde */()=>{
-  sfx("win");rain(["🍬","🎃","🍭","👻"]);
-  screen('<h1>Je hebt het overleefd!</h1><p class="big">🎉 Gefeliciteerd, spokenjager! 🎉</p><p>Je liep door de voortuin, de gang, de woonkamer en de zolder, en je liet je door geen enkel spook wegjagen.</p><p>Harold en Marlies hebben jouw beloning verstopt…</p>'+btn("🍬 Waar ligt het snoep?","candy","go")+'<p class="fb" id="fb"></p>');
+/* 12 einde */(q)=>{
+  if(!q){sfx("win");rain(["🍬","🎃","🍭","👻"])}
+  screen('<h1>Je hebt het overleefd!</h1><p class="big">🎉 Gefeliciteerd, '+(NAME?esc(NAME):'spokenjager')+'! 🎉</p><p>Je liep door de voortuin, de gang, de woonkamer en de zolder, en je liet je door geen enkel spook wegjagen.</p><p>Harold en Marlies hebben jouw beloning verstopt…</p>'+btn("🍬 Waar ligt het snoep?","candy","go")+btn("🏅 Mijn diploma","dip")+'<p class="fb" id="fb"></p>');
+  A.dip=()=>{const st=WRONG===0?3:WRONG<=3?2:1;
+    screen('<div class="dip"><div class="dh">🏅</div><h1>Diploma</h1><p>Hierbij wordt verklaard dat</p><div class="dn">'+esc(NAME||"deze dappere spokenjager")+'</div><p>het spookhuis van <b>Betuwe Singel 18</b> heeft overleefd en daarmee de titel <b>Spokenjager van het Lingemeer</b> verdient.</p><p class="stars">'+"⭐".repeat(st)+"☆".repeat(3-st)+'<br><small>Moed</small></p><p>Halloween · zaterdag 31 oktober 2026</p><p class="sign">Harold &amp; Marlies</p></div><p class="mut">📸 Maak een screenshot om je diploma te bewaren!</p>'+btn("← Terug","back"));
+    A.back=()=>STEPS[STEPS.length-1](true)};
   A.candy=()=>{stage.querySelector(".b").disabled=true;shake();scare({big:"🎃",text:"BOE!",snd:[["boom"],["stab",0,100]],dur:1300,done:()=>{
-    $("fb").innerHTML='<span style="color:var(--ink)">Het snoep ligt <b>achter een bloempot</b> bij het huis. Kijk goed rond bij de voordeur van Betuwe Singel 18. 🌸🍬</span>';
-    stage.querySelector(".sc").insertAdjacentHTML("beforeend",'<p class="mut">Neem één handje en laat nog wat over voor de volgende spokenjager. Fijne Halloween van Harold en Marlies! 🎃</p>'+btn("🔁 Nog een keer spelen","again"));A.again=()=>{step=0;progress();STEPS[0]()};sfx("win");rain(["🍬","🎃"])}})};
+    $("fb").innerHTML=candyMsg();
+    stage.querySelector(".sc").insertAdjacentHTML("beforeend",'<p class="mut">'+(candyState()==="open"?"Neem één handje en laat nog wat over voor de volgende spokenjager. ":"")+'Fijne Halloween van Harold en Marlies! 🎃</p>'+btn("🔁 Nog een keer spelen","again"));A.again=()=>{step=0;progress();STEPS[0]()};sfx("win");rain(["🍬","🎃"])}})};
 }
 ];
 document.addEventListener("click",e=>{const el=e.target.closest("[data-a]");if(!el)return;const a=el.dataset.a;
