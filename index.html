@@ -220,7 +220,7 @@ function spookfoto(){
     c.save();c.translate(w,0);c.scale(-1,1);c.drawImage(v,0,0,w,h);c.restore();
     const gr=c.createRadialGradient(w/2,h/2,h*.3,w/2,h/2,h*.85);gr.addColorStop(0,"rgba(0,0,0,0)");gr.addColorStop(1,"rgba(60,0,10,.65)");c.fillStyle=gr;c.fillRect(0,0,w,h);
     c.font=Math.round(h*.38)+"px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";c.textAlign="center";c.textBaseline="middle";c.globalAlpha=.85;c.fillText("👻",pos[0]*w,pos[1]*h);c.globalAlpha=1;
-    c.font=Math.round(h*.08)+"px Creepster,Georgia,serif";c.fillStyle="#fff";c.shadowColor="#d00";c.shadowBlur=12;c.fillText((NAME?NAME+" bij ":"")+"Betuwe Singel 18",w/2,h*.93);c.fillText("Halloween 2026",w/2,h*.07);
+    c.font=Math.round(h*.08)+"px Creepster,Georgia,serif";c.shadowColor="#000";c.shadowBlur=14;c.fillStyle="#fff";c.fillText("Halloween 2026",w/2,h*.07);c.fillStyle="#e00000";c.fillText("Betuwe Singel 18",w/2,h*.93);
     const url=cv.toDataURL("image/jpeg",.9);stopCam();flash();sfx("stab");
     screen('<h2>Gelukt!</h2><p>Een spook stond echt achter je…</p><img class="shot" alt="Jouw spookfoto" src="'+url+'"><p class="mut">Houd je vinger op de foto om hem te bewaren, of maak een screenshot.</p>'+btn("📤 Deel via WhatsApp","shfoto","go")+'<a class="b" style="text-decoration:none" download="spookfoto.jpg" href="'+url+'">💾 Foto opslaan</a><p class="fb" id="fb3"></p>'+btn("🔁 Nog een foto","again2")+btn("🏅 Naar mijn diploma","dipgo")+btn("🍬 Terug naar het snoep","snoep"));
     A.shfoto=()=>shareImg(url,"spookfoto.jpg",$("fb3"));A.again2=spookfoto;A.dipgo=()=>A.dip();A.snoep=()=>STEPS[STEPS.length-1](true)};
