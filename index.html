@@ -66,11 +66,24 @@ input.nm{width:100%;margin-top:10px;padding:13px 14px;font:inherit;font-family:s
 #gh{position:absolute;transform:translate(-50%,-50%);cursor:pointer;user-select:none;-webkit-user-select:none;padding:12px;line-height:1;transition:font-size .15s}
 #gh.pop{animation:pop .25s both}@keyframes pop{from{transform:translate(-50%,-50%) scale(.5)}to{transform:translate(-50%,-50%) scale(1)}}
 .tbar{height:8px;background:#1a0a10;border-radius:4px;overflow:hidden;margin-bottom:6px}.tbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--org))}
+#torch{position:fixed;inset:0;z-index:80;display:none;background:#000;align-items:flex-end;justify-content:center;cursor:pointer}#torch.on{display:flex}
+#torch .tl{position:absolute;inset:0;background:#fff;animation:tflick 12s linear infinite}
+#torch p{position:relative;margin:0 0 28px;padding:6px 14px;border-radius:999px;background:#0006;color:#fff;font:.9rem system-ui,sans-serif}
+@keyframes tflick{0%{opacity:1}12.5%{opacity:1}12.8%{opacity:0.3}13.58%{opacity:1}25.0%{opacity:1}25.3%{opacity:0.3}26.08%{opacity:1}30.0%{opacity:1}30.3%{opacity:0.3}31.08%{opacity:1}43.33%{opacity:1}43.63%{opacity:0.3}44.42%{opacity:1}48.33%{opacity:1}48.63%{opacity:0.3}49.42%{opacity:1}53.33%{opacity:1}53.63%{opacity:0.3}54.42%{opacity:1}57.5%{opacity:1}57.8%{opacity:0.55}61.67%{opacity:0.55}62.07%{opacity:1}66.67%{opacity:1}66.97%{opacity:0.3}67.75%{opacity:1}70.83%{opacity:1}71.13%{opacity:0.3}71.92%{opacity:1}80.0%{opacity:1}80.3%{opacity:0.3}81.08%{opacity:1}85.0%{opacity:1}85.3%{opacity:0.3}86.08%{opacity:1}90.0%{opacity:1}90.3%{opacity:0.3}91.08%{opacity:1}95.0%{opacity:1}95.3%{opacity:0.3}96.08%{opacity:1}100%{opacity:1}}
+.spd{position:fixed;left:0;top:0;z-index:40;pointer-events:none;font-size:2.4rem;line-height:1;animation:crawl var(--dur) linear forwards;filter:drop-shadow(0 0 4px #000)}
+.spd span{display:block;animation:wig .3s ease-in-out infinite alternate}
+@keyframes wig{from{transform:translateX(-4px) rotate(-6deg)}to{transform:translateX(4px) rotate(6deg)}}
+@keyframes crawl{0%{transform:translate(var(--sx),var(--sy)) rotate(var(--rot))}
+ 25%,35%{transform:translate(calc(var(--sx) + (var(--ex) - var(--sx)) * .3),calc(var(--sy) + (var(--ey) - var(--sy)) * .3)) rotate(var(--rot))}
+ 60%,70%{transform:translate(calc(var(--sx) + (var(--ex) - var(--sx)) * .65),calc(var(--sy) + (var(--ey) - var(--sy)) * .65)) rotate(var(--rot))}
+ 100%{transform:translate(var(--ex),var(--ey)) rotate(var(--rot))}}
+@media (prefers-reduced-motion:reduce){#torch .tl{animation:none}.spd{display:none}}
 @media (prefers-reduced-motion:reduce){#scare.on,#fxshake.sh,h1{animation:none}.fx{display:none}}
 </style>
 </head>
 <body>
 <div class="fx" aria-hidden="true"><div class="fog"></div><div id="fxemb"></div></div>
+<div id="torch"><div class="tl"></div><p>Tik op het scherm om de zaklamp uit te zetten</p></div>
 <div id="scare" role="alert"></div><div id="fxflash"></div>
 <main id="fxshake">
     <div id="pg" hidden><i></i></div>
@@ -161,6 +174,19 @@ function scare(o){
 function rain(em){for(let i=0;i<26;i++){const s=document.createElement("span");s.className="rain";s.textContent=em[i%em.length];s.style.left=Math.random()*96+"%";
   s.style.setProperty("--t",(2.5+Math.random()*3)+"s");s.style.animationDelay=Math.random()*1.5+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),7500)}}
 
+function spider(){if(document.hidden||reduced)return;const e=document.createElement("div");e.className="spd";e.innerHTML="<span>🕷️</span>";
+  const r=(a,b)=>a+Math.random()*(b-a),s=Math.floor(Math.random()*4);let sx,sy,ex,ey;
+  if(s<2){sy=r(15,85);ey=r(15,85);sx=s?112:-12;ex=s?-12:112}else{sx=r(15,85);ex=r(15,85);sy=s===2?-12:112;ey=s===2?112:-12}
+  const ang=Math.atan2((ey-sy)*innerHeight/100,(ex-sx)*innerWidth/100)*180/Math.PI+90;
+  e.style.setProperty("--sx",sx+"vw");e.style.setProperty("--ex",ex+"vw");e.style.setProperty("--sy",sy+"vh");e.style.setProperty("--ey",ey+"vh");
+  e.style.setProperty("--rot",ang+"deg");e.style.setProperty("--dur",r(9,12)+"s");document.body.appendChild(e);const rm=()=>e.remove();e.addEventListener("animationend",rm);setTimeout(rm,13500)}
+function spiderLoop(){spider();setTimeout(spiderLoop,14000+Math.random()*16000)}
+if(!reduced)setTimeout(spiderLoop,6000);
+let WL=null;
+function torch(on){const o=$("torch");o.classList.toggle("on",on);
+  if(on){sfx("buzz");try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>{WL=l}).catch(()=>{})}catch(e){}}
+  else if(WL){try{WL.release()}catch(e){}WL=null}}
+$("torch").onclick=()=>torch(false);
 /* ---------- Schermen ---------- */
 const stage=$("stage");let step=0,NAME="",WRONG=0,CANDY=false;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -211,9 +237,9 @@ let CAM=null;
 function stopCam(){if(CAM){CAM.getTracks().forEach(x=>x.stop());CAM=null}}
 function spookfoto(){
   const pos=[[.74,.38],[.26,.42],[.5,.22]][Math.floor(Math.random()*3)];
-  screen('<h2>Spookfoto</h2><p>Houd je telefoon recht voor je gezicht en kijk in de camera. Er staat een spook achter je! Deze foto blijft op je eigen telefoon, tenzij je hem zelf deelt.</p><div class="cam" id="cam"><video id="vd" autoplay playsinline muted></video><span class="gh2" id="g2" style="left:'+pos[0]*100+'%;top:'+pos[1]*100+'%">👻</span></div><p class="fb" id="fb"></p>'+btn("📸 Maak de foto","shot","go")+btn("🏅 Naar mijn diploma","dipgo")+btn("🍬 Terug naar het snoep","snoep"));
+  screen('<h2>Spookfoto</h2><p>Kijk in de camera. Er staat een spook achter je! Deze foto blijft op je eigen telefoon, tenzij je hem zelf deelt.</p>'+btn("📸 Maak de foto","shot","go")+'<div class="cam" id="cam"><video id="vd" autoplay playsinline muted></video><span class="gh2" id="g2" style="left:'+pos[0]*100+'%;top:'+pos[1]*100+'%">👻</span></div>'+btn("📸 Maak de foto","shot","go")+'<p class="fb" id="fb"></p>'+btn("🏅 Naar mijn diploma","dipgo")+btn("🍬 Terug naar het snoep","snoep"));
   A.dipgo=()=>{stopCam();A.dip()};A.snoep=()=>{stopCam();STEPS[STEPS.length-1](true)};
-  const fail=()=>{$("cam").style.display="none";$("fb").textContent="De camera kan niet worden gebruikt (geen toestemming of geen camera). Geen probleem, je diploma is al mooi genoeg! 📸";stage.querySelector("[data-a=shot]").disabled=true};
+  const fail=()=>{$("cam").style.display="none";$("fb").textContent="De camera kan niet worden gebruikt (geen toestemming of geen camera). Geen probleem, je diploma is al mooi genoeg! 📸";stage.querySelectorAll("[data-a=shot]").forEach(b=>b.disabled=true)};
   if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia))fail();
   else navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false}).then(s=>{CAM=s;$("vd").srcObject=s}).catch(fail);
   A.shot=()=>{const v=$("vd"),w=v.videoWidth||640,h=v.videoHeight||480,cv=document.createElement("canvas");cv.width=w;cv.height=h;const c=cv.getContext("2d");
@@ -294,15 +320,15 @@ const ST=[
 /* 11 wie woont hier */()=>quiz({h:"De laatste vraag",t:"Je ziet de uitgang. Eén vraag nog. Wie wonen er echt op Betuwe Singel 18?",o:["Dracula en Frankenstein","Harold en Marlies","De heks van het Lingemeer"],ok:1,good:"Ja! Harold en Marlies, zij hebben het snoep voor je klaargelegd.",bad:"Denk terug aan het begin: wie vertelden jou dit verhaal?"}),
 /* 12 einde */(q)=>{
   if(!q){sfx("win");rain(["🍬","🎃","🍭","👻"])}
-  screen('<h1>Je hebt het overleefd!</h1>'+btn("📸 Maak een spookfoto","foto")+'<p class="big">🎉 Gefeliciteerd, '+(NAME?esc(NAME):'spokenjager')+'! 🎉</p><p>Je kwam door de voortuin, de gang, de woonkamer, de logeerkamer en de zolder, en je liet je door geen enkel spook wegjagen.</p><p>Harold en Marlies hebben jouw beloning verstopt…</p>'+btn("🏅 Mijn diploma","dip")+btn("🍬 Waar ligt het snoep?","candy","go")+'<div id="cd"></div>');
-  const reveal=()=>{$("cd").innerHTML='<p style="color:var(--ink)">Het snoep ligt <b>achter een bloempot</b> bij het huis. Kijk goed rond bij de voordeur van Betuwe Singel 18. 🌸🍬</p><p class="mut">Neem één handje en laat nog wat over voor de volgende spokenjager. Fijne Halloween van Harold en Marlies! 🎃</p>'+btn("🔁 Nog een keer spelen","again");
-    stage.querySelector("[data-a=candy]").disabled=true;A.again=()=>{step=0;CANDY=false;progress();STEPS[0]()}};
+  screen('<h1>Je hebt het overleefd!</h1>'+btn("📸 Maak een spookfoto","foto")+'<p class="big">🎉 Gefeliciteerd, '+(NAME?esc(NAME):'spokenjager')+'! 🎉</p><p>Je kwam door de voortuin, de gang, de woonkamer, de logeerkamer en de zolder, en je liet je door geen enkel spook wegjagen.</p><p>Harold en Marlies hebben jouw beloning verstopt…</p>'+btn("🏅 Mijn diploma","dip")+btn(CANDY?"🍬 Bekijk waar het snoep ligt":"🍬 Waar ligt het snoep?","candy","go"));
+  const snoepScreen=()=>{
+    screen('<h1>🍬 Het snoep!</h1><p class="big">Het snoep ligt <b>achter een bloempot</b> bij het huis.</p><p style="text-align:center">Kijk goed rond bij de voordeur van Betuwe Singel 18. 🌸</p>'+btn("🔦 Zaklamp aan","torch","go")+btn("← Terug","back")+btn("🔁 Nog een keer spelen","again")+'<p class="mut">Neem één handje en laat nog wat over voor de volgende spokenjager. Fijne Halloween van Harold en Marlies! 🎃</p>');
+    A.torch=()=>torch(true);A.back=()=>STEPS[STEPS.length-1](true);A.again=()=>{step=0;CANDY=false;progress();STEPS[0]()}};
   A.foto=spookfoto;
-  A.candy=()=>{if(CANDY)return;shake();scare({big:"🎃",text:"BOE!",snd:[["boom"],["stab",0,100]],dur:1300,done:()=>{CANDY=true;reveal();sfx("win");rain(["🍬","🎃"])}})};
+  A.candy=()=>{if(CANDY){snoepScreen();return}shake();scare({big:"🎃",text:"BOE!",snd:[["boom"],["stab",0,100]],dur:1300,done:()=>{CANDY=true;snoepScreen();sfx("win");rain(["🍬","🎃"])}})};
   A.dip=()=>{const st=WRONG===0?3:WRONG<=3?2:1;const DIPURL=diplomaImg(NAME,st);
     screen('<div class="dip"><div class="dh">🏅</div><h1>Diploma</h1><p>Hierbij wordt verklaard dat</p><div class="dn">'+esc(NAME||"deze dappere spokenjager")+'</div><p>het spookhuis van <b>Betuwe Singel 18</b> heeft overleefd en daarmee de titel <b>Spokenjager van het Lingemeer</b> verdient.</p><p class="stars">'+"⭐".repeat(st)+"☆".repeat(3-st)+'<br><small>Moed</small></p><p>Halloween · zaterdag 31 oktober 2026</p><p class="sign">Harold &amp; Marlies</p></div>'+btn("📤 Deel via WhatsApp","shdip","go")+'<a class="b" style="text-decoration:none" download="diploma.png" href="'+DIPURL+'">💾 Diploma opslaan</a><p class="fb" id="fb2"></p><p class="mut">Of maak een screenshot om je diploma te bewaren.</p><div class="note">📸 <b>Wil je ook een spookfoto?</b> Een selfie met een spook achter je.'+btn("👻 Maak een spookfoto","foto")+'</div>'+btn("🍬 Terug naar het snoep","back"));
     A.shdip=()=>shareImg(DIPURL,"diploma.png",$("fb2"));A.back=()=>STEPS[STEPS.length-1](true)};
-  if(CANDY)reveal();
 }
 ];
 let STEPS=ST.slice();
